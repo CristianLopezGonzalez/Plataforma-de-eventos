@@ -1,7 +1,6 @@
 import Joi from 'joi';
 import dotenv from 'dotenv';
 
-// Cargar variables de entorno
 dotenv.config();
 
 const envSchema = Joi.object({
@@ -84,17 +83,23 @@ const envSchema = Joi.object({
 
   // Google Maps API
   GOOGLE_MAPS_API_KEY: Joi.string()
+    .optional()
+    .allow('')
     .messages({
       'string.empty': 'GOOGLE_MAPS_API_KEY no puede estar vacía si se proporciona',
     }),
 
-  // Stripe Configuration (Opcional)
+  // Stripe Configuration
   STRIPE_SECRET_KEY: Joi.string()
+    .optional()
+    .allow('')
     .messages({
       'string.empty': 'STRIPE_SECRET_KEY no puede estar vacía si se proporciona',
     }),
 
   STRIPE_PUBLISHABLE_KEY: Joi.string()
+    .optional()
+    .allow('')
     .messages({
       'string.empty': 'STRIPE_PUBLISHABLE_KEY no puede estar vacía si se proporciona',
     }),
@@ -140,29 +145,85 @@ const envSchema = Joi.object({
   .unknown(true)
   .required();
 
-let validatedEnv: { [key: string]: any };
+interface EnvConfig {
+  nodeEnv: string;
+  isDevelopment: boolean;
+  isProduction: boolean;
+  isTest: boolean;
+  port: number;
+  host: string;
+  databaseUrl: string;
+  jwt: {
+    secret: string;
+    expiration: string;
+    refreshSecret: string;
+    refreshExpiration: string;
+  };
+  smtp: {
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+    fromEmail: string;
+    fromName: string;
+  };
+  googleMaps: {
+    apiKey: string | null;
+  };
+  stripe: {
+    secretKey: string | null;
+    publishableKey: string | null;
+  };
+  cors: {
+    origin: string;
+  };
+  api: {
+    version: string;
+    prefix: string;
+  };
+  logging: {
+    level: string;
+  };
+  fileUpload: {
+    maxSize: number;
+  };
+  rateLimit: {
+    windowMs: number;
+    maxRequests: number;
+  };
+  qrCode: {
+    size: number;
+  };
+  pagination: {
+    defaultPageSize: number;
+    maxPageSize: number;
+  };
+}
+
+let validatedEnv: Joi.ValidationResult<any>;
 
 try {
   validatedEnv = envSchema.validate(process.env, {
-    abortEarly: false, // Mostrar todos los errores, no solo el primero
+    abortEarly: false,
     allowUnknown: true,
   });
 
   if (validatedEnv.error) {
     const errorDetails = validatedEnv.error.details
-      .map((detail: { message: any; }) => `- ${detail.message}`)
+      .map((detail) => `- ${detail.message}`)
       .join('\n');
 
     console.error('Error en validación de variables de entorno:\n', errorDetails);
     process.exit(1);
   }
+
+  console.log('Variables de entorno validadas correctamente');
 } catch (error) {
   console.error('Error al validar variables de entorno:', error);
   process.exit(1);
 }
 
-
-export const config = {
+export const config: EnvConfig = {
   // Environment
   nodeEnv: validatedEnv.value.NODE_ENV,
   isDevelopment: validatedEnv.value.NODE_ENV === 'development',
