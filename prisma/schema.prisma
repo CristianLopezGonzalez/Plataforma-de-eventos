@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+  ORGANIZER
+}
+
+enum Category {
+  MUSIC
+  SPORTS
+  ART
+  TECH
+  FOOD
+  CULTURE
+  EDUCATION
+  ENTERTAINMENT
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  FINISHED
+}
+
+enum TicketStatus {
+  PENDING
+  CONFIRMED
+  USED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  avatar    String?
+  password  String
+  role      Role     @default(USER)
+
+  // Relaciones - Eventos que organiza
+  organizedEvents Event[]     @relation("Organizer")
+
+  // Relaciones - Tickets que compro
+  tickets         Ticket[]
+
+  // Relaciones - Reviews que escribio
+  reviews         Review[]
+
+  // Relaciones - Eventos a los que asistio (N:M)
+  attendedEvents  Event[]     @relation("EventAttendees")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Event {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  category    Category
+  imageUrl    String?
+  status      EventStatus  @default(DRAFT)
+
+  dateStart DateTime
+  dateEnd   DateTime
+  capacity  Int          @default(100)
+
+  location  String
+  latitude  Float
+  longitude Float
+
+  ticketPrice Float @default(0)
+
+  organizerId String
+  organizer   User   @relation("Organizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  tickets   Ticket[]
+  reviews   Review[]
+  attendees User[]   @relation("EventAttendees")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([category])
+  @@index([dateStart])
+}
+
+model Ticket {
+  id        String       @id @default(uuid())
+  qrCode    String       @unique
+  status    TicketStatus @default(PENDING)
+
+  eventId String
+  userId  String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  purchasedAt DateTime @default(now())
+  expiresAt   DateTime
+  usedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([qrCode])
+}
+
+model Review {
+  id      String  @id @default(uuid())
+  rating  Int     @db.SmallInt // Valor entre 1 y 5
+  comment String?
+
+  eventId String
+  userId  String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([rating])
+}
