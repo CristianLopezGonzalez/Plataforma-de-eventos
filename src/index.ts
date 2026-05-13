@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
-    res.send('¡Hola, mundo!');
+    return res.json({ message: 'Bienvenido a la API de la plataforma de eventos' });
 });
 
 app.listen(config.port, () => {
