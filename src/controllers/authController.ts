@@ -2,6 +2,7 @@ import { AuthService } from "../services/authService";
 import { Request, Response } from "express";
 import { HttpResponse } from "../middlewares/htttpResponse";
 import { ChangePasswordRequest, LoginCredentials, RegisterCredentials } from "../types/authTypes";
+
 export class AuthController {
     private authService: AuthService;
     private httpResponse: HttpResponse;
